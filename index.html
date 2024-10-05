@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stupid Screen Recordr</title>
+    <style>
+        /* 2009-ish styling */
+        body {
+            background-color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            color: black;
+            text-align: center;
+            margin-top: 50px;
+        }
+        
+        #recorder-container {
+            background-color: #f4f4f4;
+            border: 1px solid #cccccc;
+            padding: 20px;
+            width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #333;
+            text-shadow: 2px 2px 3px #aaa;
+        }
+
+        p {
+            font-size: 16px;
+            color: #333;
+        }
+
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        video {
+            margin-top: 20px;
+            width: 100%;
+            height: auto;
+            border: 1px solid black;
+        }
+
+        .slider-container {
+            margin-top: 20px;
+        }
+
+        footer {
+            margin-top: 50px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="recorder-container">
+      <a href="https://tdrbot.github.io" style="text-align: left;">Go back</a>
+        <h1>Stupid Screen Recordr</h1>
+        <p>Welcom to tis recorder!! Press start to begin recordn ur screen!</p>
+        
+        <div class="slider-container">
+            <label for="mic-toggle">Enable Microphone: </label>
+            <input type="checkbox" id="mic-toggle">
+        </div>
+
+        <button id="start-btn">Start Recording</button>
+        <button id="stop-btn" disabled>Stop Recording</button>
+        <video id="video" controls></video>
+        <p>Output video</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2009 (2024) | Created by TDRP</p>
+        <p>If you try to watch the exported webm video in something like VLC Media Player or Movies and TV it won't work, but Chrome or Discord should work just fine.</p>
+    </footer>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // Function to start screen recording
+        async function startRecording() {
+            const micEnabled = document.getElementById("mic-toggle").checked;
+
+            const videoStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { mediaSource: "screen" }
+            });
+
+            let audioStream = null;
+            if (micEnabled) {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+
+            let stream;
+            if (audioStream) {
+                const combinedStream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
+                stream = combinedStream;
+            } else {
+                stream = videoStream;
+            }
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(recordedChunks, {
+                    type: "video/webm"
+                });
+                const url = URL.createObjectURL(blob);
+                const video = document.getElementById("video");
+                video.src = url;
+
+                // Offer to download the recording
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "screen_recording.webm";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            mediaRecorder.start();
+            document.getElementById("start-btn").disabled = true;
+            document.getElementById("stop-btn").disabled = false;
+        }
+
+        // Function to stop recording
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("stop-btn").disabled = true;
+        }
+
+        document.getElementById("start-btn").addEventListener("click", startRecording);
+        document.getElementById("stop-btn").addEventListener("click", stopRecording);
+    </script>
+
+</body>
+</html>
