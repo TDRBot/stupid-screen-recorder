@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stupid Screen Recordr</title>
+    <style>
+        /* Modern 2020s styling */
+        body {
+            background-color: #1e1e1e;
+            font-family: 'Inter', sans-serif;
+            color: #e0e0e0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #recorder-container {
+            background-color: #2a2a2a;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            color: #a9a9a9;
+            margin-bottom: 20px;
+        }
+
+        button {
+            font-size: 14px;
+            padding: 10px 25px;
+            margin: 10px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        video {
+            margin-top: 20px;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .slider-container {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        label {
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.5);
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="recorder-container">
+        <a href="https://tdrbot.github.io/tdrp-tools" style="display: block; text-align: left; margin-bottom: 10px;">Go back</a>
+        <h1>Stupid Screen Recordr</h1>
+        <p>Welcome to this recorder! Press start to begin recording your screen!</p>
+
+        <div class="slider-container">
+            <label for="mic-toggle">Enable Microphone:</label>
+            <input type="checkbox" id="mic-toggle">
+        </div>
+
+        <button id="start-btn">Start Recording</button>
+        <button id="stop-btn" disabled>Stop Recording</button>
+        <video id="video" controls></video>
+        <p>Output video</p>
+    </div>
+
+    <footer>
+        <p>© 2024 | Created by TDRP</p>
+        <p>If the exported WebM video doesn't work in VLC or Movies & TV, try Chrome or Discord.</p>
+    </footer>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // Function to start screen recording
+        async function startRecording() {
+            const micEnabled = document.getElementById("mic-toggle").checked;
+
+            const videoStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { mediaSource: "screen" }
+            });
+
+            let audioStream = null;
+            if (micEnabled) {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+
+            let stream;
+            if (audioStream) {
+                const combinedStream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
+                stream = combinedStream;
+            } else {
+                stream = videoStream;
+            }
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+            mediaRecorder.ondataavailable = function (event) {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function () {
+                const blob = new Blob(recordedChunks, {
+                    type: "video/webm"
+                });
+                const url = URL.createObjectURL(blob);
+                const video = document.getElementById("video");
+                video.src = url;
+
+                // Offer to download the recording
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "screen_recording.webm";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            mediaRecorder.start();
+            document.getElementById("start-btn").disabled = true;
+            document.getElementById("stop-btn").disabled = false;
+        }
+
+        // Function to stop recording
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("stop-btn").disabled = true;
+        }
+
+        document.getElementById("start-btn").addEventListener("click", startRecording);
+        document.getElementById("stop-btn").addEventListener("click", stopRecording);
+    </script>
+
+</body>
+
+</html>
